@@ -36,7 +36,7 @@ class BGG:
     def plot(self, fig_size = None, label_every = 0, clusters = False):
         """ The label_every is used to determine what fraction of points should be labeled, if it is not 0 the structure is: names[::label_every] 
         """
-        plt.figure(figsize = None)
+        plt.figure(figsize = fig_size)
         
         if label_every > 0:
             for i,name in enumerate(self.names[::label_every]):
@@ -77,4 +77,84 @@ class BGG:
             self.cluster_dict[label] = namelst
             
     
-    def graph(self,):
+    def graph_data(self, cluster_dist = 3):
+        """ Creates the df_labels dataframe that contains the name of each clustered game, its x,y position, its cluster label, and the labels of any clusters within cluster_dist.
+        Also creates the df_connected_labels that only contains the connections between clusters of games
+        """
+        self.df_labels = pd.DataFrame(data={'name': self.names, 'label': self.labels + 2, 'x': self.embed[:].T[0], 'y': self.embed[:].T[1], 'local_labels':[[] for i in range(len(self.embed))]})
+        self.df_labels = self.df_labels.loc[self.df_labels['label'] != 1]
+        
+        for label in set(self.df_labels['label']):
+            for index, row in self.df_labels.loc[self.df_labels['label'] == label].iterrows():
+                x = self.df_labels.loc[index, 'x']
+                y = self.df_labels.loc[index, 'y']
+                for index_2, row_2 in self.df_labels.loc[self.df_labels['label'] != label].iterrows():
+                    other_label = self.df_labels.loc[self.df_labels['label'] != label].loc[index_2, 'label']
+                    x_other = self.df_labels.loc[index_2, 'x']
+                    y_other = self.df_labels.loc[index_2, 'y']
+                    if (x - x_other)**2 + (y - y_other)**2 <= cluster_dist**2:
+                        self.df_labels.loc[index, 'local_labels'].append(other_label)
+        
+        self.connected_labels_lst = list(set(self.df_labels[self.df_labels['local_labels'].map(lambda d: len(d)) > 0]['label']))
+        self.df_connected_labels = self.df_labels[self.df_labels['local_labels'].map(lambda d: len(d)) > 0]
+        
+        self.label_edges = []
+
+        for lbl in range(2, self.labels.max() + 3):
+            local_lst = []
+            for index, row in self.df_connected_labels.loc[self.df_connected_labels['label'] == lbl].iterrows():
+                local_lst.append(row['local_labels'])
+            local_lst = [item for sublist in local_lst for item in sublist]
+            for cnct in set(local_lst):
+                self.label_edges.append((lbl, cnct, {'weight' : round(local_lst.count(cnct)/len(local_lst),3)}))
+        
+        
+        
+    def draw_graph(self, all_nodes = False):
+        """Only the all_nodes = False graph is nameble, this is done by manually changing the connected labels list
+        """
+        
+        if all_nodes:
+            self.G = nx.Graph()
+            self.G.add_nodes_from(range(2, self.labels.max() + 3))
+            self.G.add_edges_from(self.label_edges)
+            
+            elarge = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] > 0.667]
+            emed = [(u, v) for (u, v, d) in self.G.edges(data=True) if (d["weight"] > 0.334 and d['weight'] <= 0.667)]
+            esmall = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] <= 0.334]
+            
+            pos = nx.spring_layout(self.G)
+            
+            nx.draw_networkx_nodes(self.G, pos, node_size=700)
+
+            nx.draw_networkx_edges(self.G, pos, edgelist = elarge, width = 12, edge_color='red')
+            nx.draw_networkx_edges(self.G, pos, edgelist = emed, width = 8, edge_color='red')
+            nx.draw_networkx_edges(self.G, pos, edgelist = esmall, width = 4, edge_color='red')
+
+            nx.draw_networkx_labels(self.G, pos)
+
+            plt.axis("off")
+            plt.show();
+        
+        
+        else:
+            self.G = nx.Graph()
+            self.G.add_nodes_from(self.connected_labels_lst)
+            self.G.add_edges_from(self.label_edges)
+                      
+            elarge = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] > 0.667]
+            emed = [(u, v) for (u, v, d) in self.G.edges(data=True) if (d["weight"] > 0.334 and d['weight'] <= 0.667)]
+            esmall = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] <= 0.334]
+            
+            pos = nx.spring_layout(self.G)
+            
+            nx.draw_networkx_nodes(self.G, pos, node_size=700)
+
+            nx.draw_networkx_edges(self.G, pos, edgelist = elarge, width = 12, edge_color='red')
+            nx.draw_networkx_edges(self.G, pos, edgelist = emed, width = 8, edge_color='red')
+            nx.draw_networkx_edges(self.G, pos, edgelist = esmall, width = 4, edge_color='red')
+
+            nx.draw_networkx_labels(self.G, pos)
+
+            plt.axis("off")
+            plt.show();
