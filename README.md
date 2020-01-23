@@ -1,16 +1,16 @@
 # BGG-Predictor-
 
 Technologies:
-Python
-Pandas
-Matplotlib
-Seaborn
-SQL
-Sklearn
-t-SNE
-Custering
-HDBSCAN
-NetworkX
+* Python
+* Pandas
+* Matplotlib
+* Seaborn
+* SQL
+* Sklearn
+* t-SNE
+* Custering
+* HDBSCAN
+* NetworkX
 
 Perplexity is how many of its NN (in higher dim) a point is attracted to once it's in 2D [1]
 

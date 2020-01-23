@@ -21,13 +21,15 @@ from hdbscan import HDBSCAN
 
 
 class BGG:
-    def __init__(self, df, perp = 50, n_iter = 1000, init = 'pca'):
+    def __init__(self, df, perp = 50, n_iter = 1000, init = 'pca', num_from = 'minplayers'):
+        """Num_from is the column name that we slice on to get only numeric data
+        """
         self.df = df
         self.perp = perp
         self.n_iter = n_iter
         self.init = init
         
-        self.df_num = self.df.loc[:,'minplayers':]
+        self.df_num = self.df.loc[:, num_from:]
         self.names = self.df['details.name']
         
         self.tsne = TSNE(perplexity = self.perp, n_iter = self.n_iter, init = self.init, random_state = 137)
